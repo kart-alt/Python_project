@@ -453,4 +453,31 @@ def display_model_details(data, model):
         st.warning("Data or model not available. Please check your data source.")
         return
     
-    # Model
+    # Split data into features and target
+    X = data.drop(columns=['Churn', 'customerID', 'CustomerID'], errors='ignore')
+    y = data['Churn']
+    
+    # Predict on the dataset to show performance
+    y_pred = model.predict(X)
+    
+    # Accuracy
+    acc = accuracy_score(y, y_pred)
+    st.subheader("Accuracy")
+    st.write(f"The model accuracy on the available dataset is **{acc:.2%}**.")
+    
+    # Classification report
+    st.subheader("Classification Report")
+    report = classification_report(y, y_pred, output_dict=True)
+    report_df = pd.DataFrame(report).transpose()
+    st.dataframe(report_df)
+    
+    # Confusion matrix
+    st.subheader("Confusion Matrix")
+    fig_cm = plot_confusion_matrix(y, y_pred)
+    st.pyplot(fig_cm)
+    
+    # Feature importance
+    st.subheader("Feature Importance")
+    feature_names = X.columns.tolist()
+    fig_fi = plot_feature_importance(model, feature_names)
+    st.pyplot(fig_fi)
