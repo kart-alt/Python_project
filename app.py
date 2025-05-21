@@ -141,45 +141,59 @@ def main():
 
 def display_dashboard(data, model):
     st.header("Customer Churn Dashboard")
+
     if data is None:
         st.warning("No data available. Please check your data source.")
         return
 
     # Metrics
-    col1, col2, col3, col4 = st.columns(4)
     churn_rate = data['Churn'].mean() * 100
     total_customers = len(data)
     churned_customers = data['Churn'].sum()
     retention_rate = 100 - churn_rate
 
+    col1, col2, col3, col4 = st.columns(4)
     col1.metric("Total Customers", f"{total_customers:,}")
     col2.metric("Churned Customers", f"{churned_customers:,}")
     col3.metric("Churn Rate", f"{churn_rate:.2f}%")
     col4.metric("Retention Rate", f"{retention_rate:.2f}%")
 
-    # Visualizations
+    # Visualizations: Fallback to dynamic plots if image not found
     st.subheader("Churn Analysis")
     try:
         image = Image.open('telecom_churn_visuals.png')
         st.image(image, caption="Churn Analysis Visualizations", use_column_width=True)
-    except:
+    except FileNotFoundError:
         col1, col2 = st.columns(2)
+
         with col1:
             if 'Contract' in data.columns:
-                st.subheader("Churn by Contract Type")
+                st.markdown("**Churn by Contract Type**")
                 contract_churn = data.groupby('Contract')['Churn'].mean().sort_values(ascending=False)
-                st.bar_chart(contract_churn)
+                fig1, ax1 = plt.subplots()
+                sns.barplot(x=contract_churn.index, y=contract_churn.values, ax=ax1)
+                ax1.set_ylabel("Churn Rate")
+                ax1.set_xlabel("Contract Type")
+                st.pyplot(fig1)
+
         with col2:
             if 'MonthlyCharges' in data.columns and 'TotalCharges' in data.columns:
-                st.subheader("Charges vs Churn")
-                fig, ax = plt.subplots()
-                sns.scatterplot(x='MonthlyCharges', y='TotalCharges', hue='Churn', data=data, ax=ax)
-                st.pyplot(fig)
+                st.markdown("**Charges vs Churn**")
+                fig2, ax2 = plt.subplots()
+                sns.scatterplot(data=data, x='MonthlyCharges', y='TotalCharges', hue='Churn', ax=ax2)
+                st.pyplot(fig2)
 
+    # Time trend plot
     if 'YearMonth' in data.columns:
         st.subheader("Churn Trend Over Time")
         time_churn = data.groupby('YearMonth')['Churn'].mean()
-        st.line_chart(time_churn)
+        fig3, ax3 = plt.subplots()
+        time_churn.plot(ax=ax3)
+        ax3.set_title("Monthly Churn Rate")
+        ax3.set_ylabel("Churn Rate")
+        ax3.set_xlabel("Time (YearMonth)")
+        st.pyplot(fig3)
+
 
 def display_prediction_page(data, model):
     st.header("Customer Churn Prediction")
